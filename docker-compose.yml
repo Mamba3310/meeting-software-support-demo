@@ -7,7 +7,11 @@ services:
       PORT: "8766"
       DATA_FILE: /data/links.json
       SUPPORT_ADMIN_KEY: ${SUPPORT_ADMIN_KEY:?Set SUPPORT_ADMIN_KEY in your environment before starting}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8766,http://127.0.0.1:8766,http://localhost:8765,http://127.0.0.1:8765}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      EMAIL_BRAND: ${EMAIL_BRAND:-Tremaine Services Support}
+      RESEND_API_URL: ${RESEND_API_URL:-https://api.resend.com/emails}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8766,http://127.0.0.1:8766,http://localhost:8765,http://127.0.0.1:8765,https://mamba3310.github.io}
     volumes:
       - support-data:/data
     restart: unless-stopped

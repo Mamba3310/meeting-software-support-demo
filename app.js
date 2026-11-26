@@ -108,13 +108,20 @@
     const buttons = [...document.querySelectorAll('[data-action="create-link"]')];
     try {
       const emails = parseEmails($('#visitor-emails')?.value || '');
+      const subject = $('#email-subject')?.value.trim() || '';
+      const message = $('#email-message')?.value.trim() || '';
+      if (!subject || subject.length > 150) throw new Error('Email subject must be 1–150 characters.');
+      if (!message || message.length > 3000) throw new Error('Email message must be 1–3,000 characters.');
       saveSettings();
       buttons.forEach(button => button.setAttribute('disabled', ''));
-      const result = await api('/api/links', { method:'POST', body:JSON.stringify({ emails }) });
+      const currentOrigin = location.origin;
+      const publicBaseUrl = currentOrigin.includes('github.io') ? 'https://mamba3310.github.io/meeting-software-support-demo/' : `${currentOrigin}/`;
+      if (!$('#api-url')?.value.trim()) throw new Error('Set the backend URL before sending branded email invitations.');
+      const result = await api('/api/links', { method:'POST', body:JSON.stringify({ emails, subject, message, publicBaseUrl, apiBaseUrl:apiBase() }) });
       links = [...(result.links || []), ...links]; renderLinks();
       const created = result.links || [];
       const inviteRows = created.map(link => `<div class="bulk-invite-row"><strong>${esc(link.email)}</strong><input readonly value="${esc(visitorUrl(link))}"><button type="button" class="copy-link" data-copy-token="${esc(link.token)}">Copy</button></div>`).join('');
-      showModal({ title:`${created.length} visitor invite${created.length === 1 ? '' : 's'} created`, copy:'Send each visitor their individual link. Links remain active until you revoke them.', content:`<div class="bulk-invite-list">${inviteRows}</div>` });
+      showModal({ title:`${created.length} visitor invite${created.length === 1 ? '' : 's'} created`, copy:`${created.filter(link => link.emailSent).length} branded email${created.filter(link => link.emailSent).length === 1 ? '' : 's'} sent. ${created.filter(link => !link.emailSent).length} link${created.filter(link => !link.emailSent).length === 1 ? '' : 's'} available to copy.`, content:`<div class="bulk-invite-list">${inviteRows}</div>` });
       $('#modal-action').onclick = event => { event.preventDefault(); $('#detail-modal').close(); };
       toast(`${created.length} invitation${created.length === 1 ? '' : 's'} created.`);
     } catch (error) { toast(error.message); if (/admin|authorization/i.test(error.message)) setApiStatus('Enter the backend dashboard access key.', false); }

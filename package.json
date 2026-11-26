@@ -2,9 +2,10 @@
   "name": "meeting-software-support-demo",
   "version": "1.0.0",
   "private": true,
-  "description": "Meeting Software support dashboard with a shared visitor-link API",
+  "description": "Meeting Software support dashboard with a branded visitor email API",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:email": "node resend-check.js"
   },
   "engines": {
     "node": ">=18"
