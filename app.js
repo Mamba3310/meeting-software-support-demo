@@ -19,7 +19,10 @@
   function loadLinks() {
     try {
       const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.isArray(parsed) ? parsed.filter(item => item && typeof item.token === 'string') : [];
+      return Array.isArray(parsed) ? parsed.filter(item => item && typeof item.token === 'string').map(item => {
+        const { expiresAt, expiryLabel, ...persistentLink } = item;
+        return persistentLink;
+      }) : [];
     } catch { return []; }
   }
   function saveLinks() {
@@ -34,11 +37,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => node.classList.remove('visible'), 3000);
   }
-  function expired(link) { return Number(link.expiresAt) <= Date.now(); }
-  function status(link) {
-    if (expired(link) && !['Sharing', 'Ended'].includes(link.status)) return 'Expired';
-    return link.status;
-  }
+  function status(link) { return link.status; }
   function urlFor(link) {
     const url = new URL(location.href);
     url.search = '';
@@ -60,7 +59,7 @@
   function renderLinks() {
     const rows = links.map(link => {
       const state = status(link);
-      return `<article class="session-row"><span class="session-mark">${state === 'Sharing' ? '◉' : state === 'Approved' ? '✓' : '↗'}</span><span class="session-info"><strong>${esc(link.email || 'Visitor link')}</strong><small>Created ${esc(link.createdLabel)} · expires ${esc(link.expiryLabel)}</small><span class="session-url">${esc(urlFor(link))}</span></span><span class="session-badge state-${state.toLowerCase()}"><i></i>${esc(state)}</span><span class="session-actions"><button class="copy-link" type="button" data-copy-token="${esc(link.token)}">Copy link</button><button class="revoke-link" type="button" data-revoke-token="${esc(link.token)}">Revoke</button></span></article>`;
+      return `<article class="session-row"><span class="session-mark">${state === 'Sharing' ? '◉' : state === 'Approved' ? '✓' : '↗'}</span><span class="session-info"><strong>${esc(link.email || 'Visitor link')}</strong><small>Created ${esc(link.createdLabel)} · stays active until revoked</small><span class="session-url">${esc(urlFor(link))}</span></span><span class="session-badge state-${state.toLowerCase()}"><i></i>${esc(state)}</span><span class="session-actions"><button class="copy-link" type="button" data-copy-token="${esc(link.token)}">Copy link</button><button class="revoke-link" type="button" data-revoke-token="${esc(link.token)}">Revoke</button></span></article>`;
     }).join('');
     const empty = '<div class="empty-links"><span>↗</span><strong>No visitor links yet</strong><small>Create a link, then send it to the person you are helping.</small></div>';
     ['#overview-sessions', '#all-sessions'].forEach(selector => { if ($(selector)) $(selector).innerHTML = rows || empty; });
@@ -79,11 +78,9 @@
     const email = ($('#visitor-email')?.value || '').trim();
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return toast('Enter a valid email address, or leave it blank.');
     if (!crypto.randomUUID) return toast('Secure link creation requires a modern browser.');
-    const minutes = Number($('#link-expiry')?.value) || 30;
     const link = {
       token: crypto.randomUUID().replace(/-/g, '').slice(0, 20), email,
-      createdAt: Date.now(), expiresAt: Date.now() + minutes * 60000,
-      status: 'Waiting', createdLabel: 'just now', expiryLabel: `in ${minutes} minutes`
+      createdAt: Date.now(), status: 'Waiting', createdLabel: 'just now'
     };
     links.unshift(link);
     saveLinks();
@@ -91,7 +88,7 @@
     showModal({
       title: 'Send this link to your visitor',
       copy: 'They open the link, choose a screen, and approve the browser sharing prompt before anything is shared.',
-      content: `<div class="share-box"><label for="share-url">Visitor link</label><div><input id="share-url" readonly value="${esc(urlFor(link))}"><button class="button primary" id="copy-share-link" type="button">Copy link</button></div></div><div class="link-meta"><span>Expires in ${minutes} minutes</span><span>Visitor approval required</span></div>`
+      content: `<div class="share-box"><label for="share-url">Visitor link</label><div><input id="share-url" readonly value="${esc(urlFor(link))}"><button class="button primary" id="copy-share-link" type="button">Copy link</button></div></div><div class="link-meta"><span>Active until you revoke it</span><span>Visitor approval required</span></div>`
     });
     $('#copy-share-link').addEventListener('click', () => copyLink(link));
     $('#modal-action').onclick = event => { event.preventDefault(); $('#detail-modal').close(); };
@@ -121,7 +118,7 @@
     const link = links.find(item => item.token === token);
     $('#leader-app').hidden = true;
     $('#visitor-app').hidden = false;
-    if (!link || expired(link) || link.status === 'Revoked') {
+    if (!link || link.status === 'Revoked') {
       $('#visitor-title').textContent = link?.status === 'Revoked' ? 'This support request was closed' : 'This support link has expired';
       $('#visitor-copy').textContent = 'Ask your support contact to send a new link.';
       $('#visitor-approve').hidden = true; $('#visitor-decline').hidden = true;
