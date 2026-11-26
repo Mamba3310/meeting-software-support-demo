@@ -1,0 +1,12 @@
+{
+  "name": "meeting-software-support-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Meeting Software support dashboard with a shared visitor-link API",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

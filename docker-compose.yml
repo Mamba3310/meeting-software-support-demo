@@ -1,0 +1,16 @@
+services:
+  support-app:
+    build: .
+    ports:
+      - "8766:8766"
+    environment:
+      PORT: "8766"
+      DATA_FILE: /data/links.json
+      SUPPORT_ADMIN_KEY: ${SUPPORT_ADMIN_KEY:?Set SUPPORT_ADMIN_KEY in your environment before starting}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8766,http://127.0.0.1:8766,http://localhost:8765,http://127.0.0.1:8765}
+    volumes:
+      - support-data:/data
+    restart: unless-stopped
+
+volumes:
+  support-data:
